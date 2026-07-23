@@ -133,6 +133,12 @@ function DraggableMarker({ position, setPosition }) {
         },
     });
 
+    useEffect(() => {
+        if (position && position.lat && position.lng) {
+            map.flyTo([position.lat, position.lng], map.getZoom());
+        }
+    }, [position.lat, position.lng, map]);
+
     const eventHandlers = useMemo(
         () => ({
             dragend() {
@@ -167,52 +173,47 @@ const formSteps = [
 ];
 
 const indonesiaProvinces = [
-    "Aceh", "Bali", "Banten", "Bengkulu", "Gorontalo", "Jakarta", "Jambi", "Jawa Barat",
-    "Jawa Tengah", "Jawa Timur", "Kalimantan Barat", "Kalimantan Selatan", "Kalimantan Tengah",
-    "Kalimantan Timur", "Kalimantan Utara", "Kepulauan Bangka Belitung", "Kepulauan Riau",
-    "Lampung", "Maluku", "Maluku Utara", "Nusa Tenggara Barat", "Nusa Tenggara Timur",
-    "Papua", "Papua Barat", "Riau", "Sulawesi Barat", "Sulawesi Selatan", "Sulawesi Tengah",
-    "Sulawesi Tenggara", "Sulawesi Utara", "Sumatera Barat", "Sumatera Selatan", "Sumatera Utara",
-    "Yogyakarta"
+    "Aceh",
+    "Bali",
+    "Banten",
+    "Bengkulu",
+    "Gorontalo",
+    "Jakarta",
+    "Jambi",
+    "Jawa Barat",
+    "Jawa Tengah",
+    "Jawa Timur",
+    "Kalimantan Barat",
+    "Kalimantan Selatan",
+    "Kalimantan Tengah",
+    "Kalimantan Timur",
+    "Kalimantan Utara",
+    "Kepulauan Bangka Belitung",
+    "Kepulauan Riau",
+    "Lampung",
+    "Maluku",
+    "Maluku Utara",
+    "Nusa Tenggara Barat",
+    "Nusa Tenggara Timur",
+    "Papua",
+    "Papua Barat",
+    "Papua Barat Daya",
+    "Papua Pegunungan",
+    "Papua Selatan",
+    "Papua Tengah",
+    "Riau",
+    "Sulawesi Barat",
+    "Sulawesi Selatan",
+    "Sulawesi Tengah",
+    "Sulawesi Tenggara",
+    "Sulawesi Utara",
+    "Sumatera Barat",
+    "Sumatera Selatan",
+    "Sumatera Utara",
+    "Yogyakarta",
 ];
 
 const bankNames = ["BCA", "BNI", "BRI", "Mandiri", "CIMB Niaga", "Danamon", "Permata Bank"];
-
-function SearchControl({ onLocation }) {
-    const map = useMap();
-  
-    useEffect(() => {
-      const provider = new OpenStreetMapProvider();
-      const control = new GeoSearchControl({
-        provider,
-        style: "bar",
-        showMarker: false,
-        showPopup: false,
-        autoClose: true,
-        retainZoomLevel: false,
-        animateZoom: true,
-        keepResult: true,
-        searchLabel: "Enter address or location...",
-      });
-  
-      map.addControl(control);
-  
-      const handler = (result) => {
-        const { x: lng, y: lat, label } = result.location;
-        onLocation({ lat, lng, label });
-        map.setView([lat, lng], 13);
-      };
-  
-      map.on("geosearch/showlocation", handler);
-  
-      return () => {
-        map.removeControl(control);
-        map.off("geosearch/showlocation", handler);
-      };
-    }, [map, onLocation]);
-  
-    return null;
-  }
 
 // --- Main Registration Page Component ---
 export default function Events() {
@@ -224,6 +225,10 @@ export default function Events() {
     const [submissionError, setSubmissionError] = useState(null);
     const [errors, setErrors] = useState({});
     const [activitiesData, setActivitiesData] = useState([]);
+    const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const locationDropdownRef = useRef(null);
 
     const initialFormData = {
         institutionName: '',
@@ -500,6 +505,74 @@ export default function Events() {
     const currentStepData = formSteps.find(step => step.id === currentStep);
     const nextStepData = formSteps.find(step => step.id === currentStep + 1);
 
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (formData.locationAddress && formData.locationAddress.trim().length > 3) {
+                handleSearchLocation(formData.locationAddress);
+            } else {
+                setSearchResults([]);
+                setShowDropdown(false);
+            }
+        }, 1000);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [formData.locationAddress]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSearchLocation = async (queryToSearch) => {
+        const query = typeof queryToSearch === 'string' ? queryToSearch : formData.locationAddress;
+        if (!query || query.trim().length < 3) {
+            setSearchResults([]);
+            setShowDropdown(false);
+            return;
+        }
+        
+        setIsSearchingLocation(true);
+        const provider = new OpenStreetMapProvider();
+        try {
+            const results = await provider.search({ query });
+            if (results && results.length > 0) {
+                setSearchResults(results);
+                setShowDropdown(true);
+            } else {
+                setSearchResults([]);
+                setShowDropdown(false);
+            }
+        } catch (error) {
+            console.error("Search error", error);
+            setSearchResults([]);
+            setShowDropdown(false);
+        } finally {
+            setIsSearchingLocation(false);
+        }
+    };
+
+    const handleSelectLocation = (result) => {
+        const newPos = {
+            lat: parseFloat(result.y),
+            lng: parseFloat(result.x),
+            label: result.label
+        };
+        handlePositionChange(newPos);
+        
+        setFormData(prev => ({
+            ...prev,
+            locationAddress: result.label
+        }));
+        
+        setSearchResults([]);
+        setShowDropdown(false);
+    };
+
     return (
         <div className="h-screen w-full bg-white font-sans flex flex-col lg:flex-row overflow-hidden">
 
@@ -692,7 +765,39 @@ export default function Events() {
                                             <div className="space-y-8">
                                                 <div>
                                                     <label htmlFor="locationAddress" className="block text-sm font-medium text-gray-700 mb-1">Location Address</label>
-                                                    <input type="text" name="locationAddress" id="locationAddress" value={formData.locationAddress} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500" />
+                                                    <div className="relative" ref={locationDropdownRef}>
+                                                        <input 
+                                                            type="text" 
+                                                            name="locationAddress" 
+                                                            id="locationAddress" 
+                                                            value={formData.locationAddress} 
+                                                            onChange={handleInputChange} 
+                                                            onFocus={() => {
+                                                                if (searchResults.length > 0) setShowDropdown(true);
+                                                            }}
+                                                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500" 
+                                                            placeholder="Type an address to search..." 
+                                                        />
+                                                        {isSearchingLocation && (
+                                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {showDropdown && searchResults.length > 0 && (
+                                                            <ul className="absolute z-[10000] w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-gray-100">
+                                                                {searchResults.map((result, index) => (
+                                                                    <li 
+                                                                        key={index} 
+                                                                        onClick={() => handleSelectLocation(result)}
+                                                                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 transition-colors"
+                                                                    >
+                                                                        {result.label}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div>
                                                     <div className="flex justify-between items-center mb-2">
@@ -709,7 +814,6 @@ export default function Events() {
                                                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                                                 />
-                                                                 <SearchControl onLocation={handlePositionChange} />
                                                                 <DraggableMarker position={mapPosition} setPosition={handlePositionChange} />
                                                             </MapContainer>
                                                         </div>
