@@ -1664,8 +1664,7 @@ export default function RegistrationPage() {
                       ))}
                       <div className="border-gray-200 pt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Dates of Availability of Dishes at the Restaurant{" "}
-                          <span className="text-gray-400">(Optional)</span>
+                          Dates of Availability of Dishes at the Restaurant
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="relative">
