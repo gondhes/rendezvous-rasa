@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from '../../assets/styles/Footer.module.css';
 
-import logo1 from '../../assets/logo-crp.jpeg'
+import logo1 from '../../assets/logo-rendezvous.png'
 import logo2 from '../../assets/img/partners/logo2.png'
 import logo3 from '../../assets/img/partners/logo3.png'
 import logo4 from '../../assets/img/partners/logo4.png'

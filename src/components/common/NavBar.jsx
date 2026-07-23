@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
-import logoSrc from '../../assets/logo-crp.jpeg'; // <-- Path ke logo yang sudah diimpor
+import logoSrc from '../../assets/logo-rendezvous.png'; // <-- Path ke logo yang sudah diimpor
 
 const navigation = [
   { name: 'Home', href: '/', disabled: false },
