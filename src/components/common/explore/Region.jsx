@@ -13,7 +13,7 @@ import RestaurantDetailPage from './components/RestaurantDetailPage';
 function Region() {
     const initialCitiesData = {
         Jakarta: {
-            description: "In the heart of Indonesia's bustling capital, Cita Rasa Prancis brings the elegance of French cuisine and culture to life. From modern venues to timeless traditions, experience a vibrant blend of Parisian sophistication and Jakarta's dynamic urban energy.",
+            description: "In the heart of Indonesia's bustling capital, Rendezvous-Rasa brings the elegance of French cuisine and culture to life. From modern venues to timeless traditions, experience a vibrant blend of Parisian sophistication and Jakarta's dynamic urban energy.",
             backgroundImage: CITYSECTIONJKT,
             places: []
         },
